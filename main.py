@@ -1,3 +1,4 @@
+import pprint
 import threading
 import time
 import telebot
@@ -7,25 +8,63 @@ import vk
 bot = telebot.TeleBot(token=config.tg_token)
 
 
-@bot.message_handler(commands=['add',])
+@bot.message_handler(commands=['addgroup', ])
 def add_group(message):
-    markup = telebot.types.ReplyKeyboardMarkup()
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(telebot.types.KeyboardButton(text='Отмена'))
-    bot.send_message(chat_id=config.my_chat_id, text='ID группы: ', reply_markup=markup)
+    msg = bot.send_message(chat_id=config.my_chat_id, text='ID группы: ', reply_markup=markup)
+    bot.register_next_step_handler(msg, setup_group)
 
 
-# @bot.message_handler(commands=['start',])
-# def get_id(message):
-#     print(message)
+def setup_group(msg):
+    if msg.text == 'Отмена':
+        return
+    result_of_add = vk.setup_new_group(msg.text)
+    bot.send_message(chat_id=config.my_chat_id, text=result_of_add)
+
+
+@bot.message_handler(commands=['addpost', ])
+def add_post(message):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,
+                                               one_time_keyboard=True)
+    markup.add(telebot.types.KeyboardButton(text='Отмена'))
+    msg = bot.send_message(chat_id=config.my_chat_id,
+                           text='Создадите пост и отправьте его мне: ',
+                           reply_markup=markup)
+    bot.register_next_step_handler(msg, get_post)
+
+
+def get_post(message):
+    print(message)
+    if message.content_type == 'text':
+        bot.send_message(chat_id=config.channel_id,
+                         text=message.text)
+    elif message.content_type == 'photo':
+        bot.send_photo(chat_id=config.channel_id,
+                       photo=message.json.get('photo')[-1].get('file_id'),
+                       caption=message.caption)
+    elif message.content_type == 'document':
+        bot.send_document(chat_id=config.channel_id,
+                          data=message.json.get('document').get('file_id'),
+                          caption=message.caption)
+
+
+@bot.message_handler(commands=['start',])
+def get_id(message):
+    print(message)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(obj):
     for news in config.dict_of_data_about_post:
         if news.get('id') == int(obj.data):
-            bot.send_media_group(chat_id=config.my_chat_id,
-                                 media=(telebot.types.InputMediaPhoto(news.get('attachments')[0], caption=news.get('text')),
-                                        *(telebot.types.InputMediaPhoto(media) for media in news.get('attachments')[1:])))
+            if news.get('attachments'):
+                bot.send_media_group(chat_id=config.channel_id,
+                                     media=(telebot.types.InputMediaPhoto(news.get('attachments')[0], caption=news.get('text')),
+                                            *(telebot.types.InputMediaPhoto(media) for media in news.get('attachments')[1:])))
+            else:
+                bot.send_message(chat_id=config.channel_id,
+                                 text=news.get('text'))
 
 
 def change_menu(news):
@@ -38,10 +77,15 @@ def parse():
     while True:
         for news in vk.parse_group():
             config.dict_of_data_about_post.append(news)
-            bot.send_photo(chat_id=config.my_chat_id,
-                           photo=news.get('attachments')[0],
-                           caption=news.get('text'),
-                           reply_markup=change_menu(news.get('id')))
+            if news.get('attachments'):
+                bot.send_photo(chat_id=config.my_chat_id,
+                               photo=news.get('attachments')[0],
+                               caption=news.get('text'),
+                               reply_markup=change_menu(news.get('id')))
+            else:
+                bot.send_message(chat_id=config.my_chat_id,
+                                 text=news.get('text'),
+                                 reply_markup=change_menu(news.get('id')))
         time.sleep(60)
 
 

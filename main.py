@@ -55,7 +55,8 @@ def get_post(message):
     :param message:
     :return:
     """
-    print(message)
+    if message.text == 'Отмена':
+        return
     if message.content_type == 'text':
         bot.send_message(chat_id=config.channel_id,
                          text=message.text + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
@@ -94,13 +95,24 @@ def callback(obj):
     :param obj:
     :return:
     """
-    # print('sex')
+    if obj.data.find('del') > -1:
+        bot.delete_message(config.my_chat_id, obj.data[obj.data.find(' ') + 1:obj.data.rfind(' ')])
+        for news in config.dict_of_data_about_post:
+            if news.get('id') == int(obj.data[obj.data.rfind(' '):]):
+                config.dict_of_data_about_post.remove(news)
+        return
+
     for news in config.dict_of_data_about_post:
         if news.get('id') == int(obj.data):
-            if news.get('attachments'):
+            if news.get('attachments') and len(news.get('attachments')) > 1:
                 bot.send_media_group(chat_id=config.channel_id,
                                      media=(telebot.types.InputMediaPhoto(news.get('attachments')[0], caption=news.get('text'),
                                             *(telebot.types.InputMediaPhoto(media) for media in news.get('attachments')[1:])),))
+            elif news.get('attachments') and len(news.get('attachments')) == 1:
+                bot.send_photo(chat_id=config.channel_id,
+                               photo=news.get('attachments')[0],
+                               caption=news.get('text') + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                               parse_mode='html',)
             else:
                 bot.send_message(chat_id=config.channel_id,
                                  text=news.get('text') + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
@@ -109,14 +121,15 @@ def callback(obj):
             return
 
 
-def change_menu(news):
+def change_menu(news, message_id):
     """
         Менюшка на вывод да
     :param news:
     :return:
     """
     markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton(text='Да', callback_data=news))
+    markup.add(telebot.types.InlineKeyboardButton(text='Да', callback_data=news),
+               telebot.types.InlineKeyboardButton(text='Нет', callback_data='del ' + str(message_id) + ' ' + str(news)))
     return markup
 
 
@@ -128,15 +141,18 @@ def parse():
     while True:
         for news in vk.parse_group():
             config.dict_of_data_about_post.append(news)
+            msg = bot.send_message(chat_id=config.my_chat_id,
+                                   text='.')
             if news.get('attachments'):
                 bot.send_photo(chat_id=config.my_chat_id,
                                photo=news.get('attachments')[0],
                                caption=news.get('text'),
-                               reply_markup=change_menu(news.get('id')))
+                               reply_markup=change_menu(news.get('id'), msg.message_id + 1))
             else:
                 bot.send_message(chat_id=config.my_chat_id,
                                  text=news.get('text'),
-                                 reply_markup=change_menu(news.get('id')))
+                                 reply_markup=change_menu(news.get('id'), msg.message_id + 1))
+            bot.delete_message(config.my_chat_id, msg.message_id)
         time.sleep(60)
 
 

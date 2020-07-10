@@ -23,9 +23,9 @@ def parse_group():
                           f'WHERE posts.id_group = "{group}" '
                           f'    AND posts.id_post = {post.get("id")}').fetchall():
             continue
-        # else:
-        #     cursor.execute(f'INSERT INTO posts (id_group, id_post) VALUES ("{group}", {post.get("id")})')
-        #     connect.commit()
+        else:
+            cursor.execute(f'INSERT INTO posts (id_group, id_post) VALUES ("{group}", {post.get("id")})')
+            connect.commit()
 
         result_dict = {'id': post.get('id'), 'text': post.get('text')}
         attachments = post.get('attachments')

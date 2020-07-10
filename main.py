@@ -78,14 +78,15 @@ def get_post(message):
                       options=tuple(option.get('text') for option in dict_of_poll.get('options')))
 
 
-@bot.message_handler(commands=['start', ])
+@bot.channel_post_handler(commands=['start', ])
 def get_id(message):
     """
         Для получения id-шника
     :param message:
     :return:
     """
-    print(message)
+    # print(message)
+    threading.Thread(target=parse).start()
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -159,3 +160,4 @@ def parse():
 if __name__ == '__main__':
     threading.Thread(target=parse).start()
     bot.infinity_polling()
+    # pass

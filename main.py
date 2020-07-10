@@ -1,8 +1,8 @@
-import pprint
 import threading
 import time
 import telebot
 import config
+import util
 import vk
 
 bot = telebot.TeleBot(token=config.tg_token)
@@ -10,6 +10,11 @@ bot = telebot.TeleBot(token=config.tg_token)
 
 @bot.message_handler(commands=['addgroup', ])
 def add_group(message):
+    """
+        Функция на добавление групп
+    :param message:
+    :return:
+    """
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(telebot.types.KeyboardButton(text='Отмена'))
     msg = bot.send_message(chat_id=config.my_chat_id, text='ID группы: ', reply_markup=markup)
@@ -17,14 +22,24 @@ def add_group(message):
 
 
 def setup_group(msg):
+    """
+        Функция на добавление группы в БД
+    :param msg:
+    :return:
+    """
     if msg.text == 'Отмена':
         return
-    result_of_add = vk.setup_new_group(msg.text)
+    result_of_add = util.setup_new_group(msg.text)
     bot.send_message(chat_id=config.my_chat_id, text=result_of_add)
 
 
 @bot.message_handler(commands=['addpost', ])
 def add_post(message):
+    """
+        Функция на вывод меню добавления поста
+    :param message:
+    :return:
+    """
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,
                                                one_time_keyboard=True)
     markup.add(telebot.types.KeyboardButton(text='Отмена'))
@@ -35,45 +50,81 @@ def add_post(message):
 
 
 def get_post(message):
+    """
+        Функция на вывод добавленного админом поста в группы
+    :param message:
+    :return:
+    """
     print(message)
     if message.content_type == 'text':
         bot.send_message(chat_id=config.channel_id,
-                         text=message.text)
+                         text=message.text + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                         parse_mode='html')
     elif message.content_type == 'photo':
         bot.send_photo(chat_id=config.channel_id,
                        photo=message.json.get('photo')[-1].get('file_id'),
-                       caption=message.caption)
+                       caption=message.caption + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                       parse_mode='html')
     elif message.content_type == 'document':
         bot.send_document(chat_id=config.channel_id,
                           data=message.json.get('document').get('file_id'),
-                          caption=message.caption)
+                          caption=(message.caption if message.caption else '')  + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                          parse_mode='html')
+    elif message.content_type == 'poll':
+        dict_of_poll = message.json.get('poll')
+        bot.send_poll(chat_id=config.channel_id,
+                      question=dict_of_poll.get('question'),
+                      options=tuple(option.get('text') for option in dict_of_poll.get('options')))
 
 
-@bot.message_handler(commands=['start',])
+@bot.message_handler(commands=['start', ])
 def get_id(message):
+    """
+        Для получения id-шника
+    :param message:
+    :return:
+    """
     print(message)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(obj):
+    """
+        Для одобрения админу
+    :param obj:
+    :return:
+    """
+    # print('sex')
     for news in config.dict_of_data_about_post:
         if news.get('id') == int(obj.data):
             if news.get('attachments'):
                 bot.send_media_group(chat_id=config.channel_id,
-                                     media=(telebot.types.InputMediaPhoto(news.get('attachments')[0], caption=news.get('text')),
-                                            *(telebot.types.InputMediaPhoto(media) for media in news.get('attachments')[1:])))
+                                     media=(telebot.types.InputMediaPhoto(news.get('attachments')[0], caption=news.get('text'),
+                                            *(telebot.types.InputMediaPhoto(media) for media in news.get('attachments')[1:])),))
             else:
                 bot.send_message(chat_id=config.channel_id,
-                                 text=news.get('text'))
+                                 text=news.get('text') + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                                 parse_mode='html')
+            config.dict_of_data_about_post.remove(news)
+            return
 
 
 def change_menu(news):
+    """
+        Менюшка на вывод да
+    :param news:
+    :return:
+    """
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton(text='Да', callback_data=news))
     return markup
 
 
 def parse():
+    """
+        Ежесекундный парс
+    :return:
+    """
     while True:
         for news in vk.parse_group():
             config.dict_of_data_about_post.append(news)

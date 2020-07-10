@@ -14,9 +14,10 @@ def parse_group():
 
     groups = (row[0] for row in cursor.execute('SELECT title_group FROM groups'))
     for group in tuple(groups):
-        print(group)
-        html_code = requests.get(
-            'https://api.vk.com/method/wall.get?domain={}&count=2&access_token={}&v=5.120'.format(group, config.vk_token)).text
+        if group.startswith('-'):
+            html_code = requests.get('https://api.vk.com/method/wall.get?owner_id={}&count=2&access_token={}&v=5.120'.format(group, config.vk_token)).text
+        else:
+            html_code = requests.get('https://api.vk.com/method/wall.get?domain={}&count=2&access_token={}&v=5.120'.format(group, config.vk_token)).text
         dict_of_code = eval(html_code.replace('false', 'False').replace('true', 'True').replace('null', 'None'))
         print(html_code)
         post = dict_of_code.get('response').get('items')[-1]
@@ -38,6 +39,11 @@ def parse_group():
                     result_dict.get('attachments').append(requests.get(
                         max(attachment.get('photo').get('sizes'), key=lambda x: x.get('height')).get('url').replace('\\',
                                                                                                                     '')).content)
+                elif attachment.get('link'):
+                    result_dict.get('attachments').append(attachment.get('link').get('url'))
+                    result_dict['type'] = 'link'
+                    result_dict['title'] = attachment.get('link').get('title')
+
         if not post.get('text') and not post.get('attachments'):
             continue
         yield result_dict

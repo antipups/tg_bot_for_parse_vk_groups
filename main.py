@@ -144,11 +144,16 @@ def parse():
             config.dict_of_data_about_post.append(news)
             msg = bot.send_message(chat_id=config.my_chat_id,
                                    text='.')
-            if news.get('attachments'):
+            if news.get('attachments') and news.get('type') != 'link':
                 bot.send_photo(chat_id=config.my_chat_id,
                                photo=news.get('attachments')[0],
                                caption=news.get('text'),
                                reply_markup=change_menu(news.get('id'), msg.message_id + 1))
+            elif news.get('attachments') and news.get('type') == 'link':
+                bot.send_message(chat_id=config.my_chat_id,
+                                 text='\n\n<a href="{}">{}</a>'.format(news.get('attachments')[0].replace('\\', ''), news.get('text')),
+                                 parse_mode='html',
+                                 reply_markup=change_menu(news.get('id'), msg.message_id + 1),)
             else:
                 bot.send_message(chat_id=config.my_chat_id,
                                  text=news.get('text'),

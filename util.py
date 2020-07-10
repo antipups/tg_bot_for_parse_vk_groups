@@ -12,6 +12,8 @@ def setup_new_group(title_group):
     result = ''
 
     try:
+        if title_group.startswith('public'):
+            title_group = title_group.replace('public', '-')
         cursor.execute('INSERT INTO groups (title_group) VALUES ("{}")'.format(title_group))
     except sqlite3.OperationalError:
         result = 'Ошибка ввода'

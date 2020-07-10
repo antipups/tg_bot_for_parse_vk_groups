@@ -59,17 +59,17 @@ def get_post(message):
         return
     if message.content_type == 'text':
         bot.send_message(chat_id=config.channel_id,
-                         text=message.text + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                         text=message.text + '\n\n<a href=ВАША ССЫЛКА">ВАШЕ НАЗВАНИЕ КАНАЛА</a>',
                          parse_mode='html')
     elif message.content_type == 'photo':
         bot.send_photo(chat_id=config.channel_id,
                        photo=message.json.get('photo')[-1].get('file_id'),
-                       caption=message.caption + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                       caption=message.caption + '\n\n<a href=ВАША ССЫЛКА">ВАШЕ НАЗВАНИЕ КАНАЛА</a>',
                        parse_mode='html')
     elif message.content_type == 'document':
         bot.send_document(chat_id=config.channel_id,
                           data=message.json.get('document').get('file_id'),
-                          caption=(message.caption if message.caption else '')  + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                          caption=(message.caption if message.caption else '')  + '\n\n<a href=ВАША ССЫЛКА">ВАШЕ НАЗВАНИЕ КАНАЛА</a>',
                           parse_mode='html')
     elif message.content_type == 'poll':
         dict_of_poll = message.json.get('poll')
@@ -112,11 +112,11 @@ def callback(obj):
             elif news.get('attachments') and len(news.get('attachments')) == 1:
                 bot.send_photo(chat_id=config.channel_id,
                                photo=news.get('attachments')[0],
-                               caption=news.get('text') + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                               caption=news.get('text') + '\n\n<a href=ВАША ССЫЛКА">ВАШЕ НАЗВАНИЕ КАНАЛА</a>',
                                parse_mode='html',)
             else:
                 bot.send_message(chat_id=config.channel_id,
-                                 text=news.get('text') + '\n\n<a href="https://t.me/joinchat/AAAAAFbYN2q_kFnEcONysA">Ссылка на канал</a>',
+                                 text=news.get('text') + '\n\n<a href=ВАША ССЫЛКА">ВАШЕ НАЗВАНИЕ КАНАЛА</a>',
                                  parse_mode='html')
             config.dict_of_data_about_post.remove(news)
             return

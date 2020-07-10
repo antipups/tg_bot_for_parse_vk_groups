@@ -14,17 +14,19 @@ def parse_group():
 
     groups = (row[0] for row in cursor.execute('SELECT title_group FROM groups'))
     for group in tuple(groups):
+        print(group)
         html_code = requests.get(
-            f'https://api.vk.com/method/wall.get?domain={group}&count=2&access_token={config.vk_token}&v=5.120').text
+            'https://api.vk.com/method/wall.get?domain={}&count=2&access_token={}&v=5.120'.format(group, config.vk_token)).text
         dict_of_code = eval(html_code.replace('false', 'False').replace('true', 'True').replace('null', 'None'))
+        print(html_code)
         post = dict_of_code.get('response').get('items')[-1]
         if cursor.execute('SELECT * '  # если такая запись уже публикаовалось - бан
                           'FROM posts '
-                          f'WHERE posts.id_group = "{group}" '
-                          f'    AND posts.id_post = {post.get("id")}').fetchall():
+                          'WHERE posts.id_group = "{}" '
+                          '    AND posts.id_post = {}'.format(group, post.get("id"))).fetchall():
             continue
         else:
-            cursor.execute(f'INSERT INTO posts (id_group, id_post) VALUES ("{group}", {post.get("id")})')
+            cursor.execute('INSERT INTO posts (id_group, id_post) VALUES ("{}", {})'.format(group, post.get("id")))
             connect.commit()
 
         result_dict = {'id': post.get('id'), 'text': post.get('text')}

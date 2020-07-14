@@ -19,16 +19,15 @@ def parse_group():
         else:
             html_code = requests.get('https://api.vk.com/method/wall.get?domain={}&count=2&access_token={}&v=5.120'.format(group, config.vk_token)).text
         dict_of_code = eval(html_code.replace('false', 'False').replace('true', 'True').replace('null', 'None'))
-        print(html_code)
         post = dict_of_code.get('response').get('items')[-1]
         if cursor.execute('SELECT * '  # если такая запись уже публикаовалось - бан
                           'FROM posts '
                           'WHERE posts.id_group = "{}" '
                           '    AND posts.id_post = {}'.format(group, post.get("id"))).fetchall():
             continue
-        else:
-            cursor.execute('INSERT INTO posts (id_group, id_post) VALUES ("{}", {})'.format(group, post.get("id")))
-            connect.commit()
+        # else:
+        #     cursor.execute('INSERT INTO posts (id_group, id_post) VALUES ("{}", {})'.format(group, post.get("id")))
+        #     connect.commit()
 
         result_dict = {'id': post.get('id'), 'text': post.get('text')}
         attachments = post.get('attachments')
